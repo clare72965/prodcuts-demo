@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>商品查詢</title>
+	<script src="./js/jquery-1.11.0.min.js"></script>
+	<style type="text/css">
+		.layout-base {
+			background-color: #f6f6f6;
+			display: flex;
+		}
+
+		.search {
+			background-color: #e1dfdf;
+			padding: 10px;
+			height: 30px;
+		}
+
+		.clear {
+			background: url(./img/search_clear.png) 0 0 no-repeat;
+			background-size: 20px;
+			height: 20px;
+			width: 20%;
+			position: relative;
+			right: 25px;
+		}
+
+		.dot {
+			display: inline-block;
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			margin-left: 10px;
+			background-color: #bbb;
+			cursor: pointer;
+		}
+
+		.images {
+			display: flex;
+			justify-content: flex-start;
+			transition: all 0.3s ease-in-out;
+			align-content: center;
+		}
+
+		.images>div {
+			width: 800px;
+			height: 200px;
+			background: #fcc;
+			line-height: 200px;
+			text-align: center;
+		}
+
+		.images img {
+			min-width: 800px;
+			min-height: 200px;
+		}
+
+		.window {
+			width: 800px;
+			height: 200px;
+			overflow: hidden;
+			margin: 0 auto;
+		}
+
+		.count-down {
+			background-color: white;
+			border: 1px solid #c4c4c4;
+		}
+
+		.product-catogory {
+			width: 10%;
+			padding: 15px;
+		}
+
+
+		.product-catogory div {
+			text-align: center;
+			border: 1px solid gray;
+			border-radius: 5px;
+			margin: 5px 0;
+			cursor: pointer;
+		}
+
+		.product-catogory-clicked {
+			border: 1px solid #3a8aca !important;
+			color: #3a8aca;
+		}
+
+		.products {
+			display: flex;
+			flex-wrap: wrap;
+			width: 90%;
+		}
+
+		#goTop {
+			border: 1px solid #3a8aca;
+			text-align: center;
+			border-radius: 4px;
+			height: 30px;
+			color: #3a8aca;
+			line-height: 30px;
+		}
+
+		.go-top-box {
+			width: 5%;
+			padding: 20px 20px 100px 10px;
+			align-self: flex-end;
+		}
+
+		#product-detail-modal {
+			display: none;
+			position: fixed;
+			width: 350px;
+			z-index: 3;
+			background-color: white;
+			top: 50%;
+			height: 350px;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			border-radius: 4px;
+		}
+
+		#mask {
+			display: none;
+			z-index: 2;
+			background-color: black;
+			opacity: 0.5;
+			width: 100%;
+			height: 100%;
+			position: fixed;
+			top: 0;
+		}
+	</style>
+	<script>
+
+		// 搜索商品
+		function search() {
+			//按enter搜索
+			$('.search input').keypress(function (e) {
+				code = (e.keyCode ? e.keyCode : e.which);
+				if (code == 13) {
+					var searchWord = $('.search input').val();
+					$(".products > div").get().forEach(function (res) {
+						if ($(res).text().indexOf(searchWord) == -1) {
+							$(res).css('display', 'none');
+						} else {
+							$(res).css('display', 'block');
+						}
+					})
+				}
+			});
+
+			//點擊叉叉
+			$('.clear').click(function () {
+				$('.search input').val('');
+				$(".products > div").get().forEach(function (res) {
+					$(res).css('display', 'block');
+				})
+			});
+		}
+
+
+		// 查看詳情
+		function openDetail(res) {
+			var productInfo = $(res).data();
+			$("#product-detail-modal").css('display', 'block');
+			$("#mask").css('display', 'block');
+			$("#product-detail-modal").append("<div><div style='padding: 10px; font-size: 20px; border-bottom: 1px solid gray;'>" + productInfo.productsName + "</div><div style='padding: 10px;'>" + productInfo.descript + "</div></div>")
+		}
+
+		function catorgory() {
+			$(".product-catogory div").get().forEach(function (res) {
+				$(res).click(function () {
+					let index = $(this).index() + 1;
+
+					if ($(res).hasClass('product-catogory-clicked')) {
+						$(res).removeClass('product-catogory-clicked');
+						$(".products > div").get().forEach(function (res) {
+							$(res).css('background-color', 'none');
+						})
+					} else {
+						$(".product-catogory div").removeClass('product-catogory-clicked');
+						$(res).addClass('product-catogory-clicked');
+
+						$(".products > div").get().forEach(function (res) {
+							let info = $(res).data();
+							if (index === info.catogory) {
+								$(res).css('background-color', 'rgb(211 211 247)');
+							} else {
+								$(res).css('background-color', 'none');
+							}
+						})
+					}
+
+				})
+			})
+		}
+
+		// 遮罩顯示
+		function displayMask() {
+			$("#mask").click(function () {
+				if ($("#mask").get(0).style.display == 'block') {
+					$("#mask").css('display', 'none');
+					$("#product-detail-modal").css('display', 'none');
+					$("#product-detail-modal").empty();
+				}
+			});
+		}
+
+		// 輪播
+		function goToSlide(current) {
+			$('#slides').css({
+				'transform': 'translateX(-' + 800 * current + 'px)'
+			})
+		}
+
+
+
+		$().ready(function () {
+			var products = [];
+			for (var i = 1; i <= 25; i++) {
+
+				products.push({
+					id: i,
+					productsName: "商品" + i,
+					descript: "此商品為第" + i + "個商品",
+					catogory: i % 5
+				})
+				$('.products').append('<div style="padding: 15px;"  onclick="openDetail(this)" ><img src="./img/no-img.png" style="width: 200px;"><div>' + products[i - 1].productsName + '</div></div>');
+				$('.products > div').eq(i - 1).data(products[i - 1]);
+			}
+
+
+
+			var navH = $(".search").offset().top;
+			$(window).scroll(function () {
+				var scroH = $(this).scrollTop();
+				if (scroH >= navH) {
+					$(".search").css({ "position": "sticky", "top": 0 });
+				} else if (scroH < navH) {
+					$(".search").css({ "position": "static" });
+				}
+			})
+
+
+			//倒數
+			setInterval(function () {
+				var time = new Date();
+				var nowTime = time.getTime();
+				time.setMonth(10);
+				time.setDate(18);
+				time.setHours(10);
+				time.setMinutes(0);
+				time.setSeconds(0);
+				var endTime = time.getTime();
+				var offsetTime = (endTime - nowTime) / 1000;
+				var sec = parseInt(offsetTime % 60);
+				var min = parseInt((offsetTime / 60) % 60);
+				var hr = parseInt(offsetTime / 60 / 60);
+				$(".count-down").text('倒數:' + hr + ":" + min + ":" + sec);
+			}, 1000);
+
+			// 回頂部
+			$("#goTop").click(function () {
+				$(window).scrollTop(0);
+			});
+
+			// 輪播
+			let current = 0;
+			setInterval(function () {
+				goToSlide((current + 1) % 10);
+				current++;
+			}, 2000);
+
+			$('.dot').on('click', function () {
+				current = $(this).index();
+				$('#slides').css({
+					'transform': 'translateX(-' + 800 * current + 'px)'
+				})
+			})
+
+			search();
+			displayMask();
+			catorgory();
+		});
+
+	</script>
+</head>
+
+<body>
+	<div class="layout-base">
+		<div style="width: 95%;padding: 20px;">
+
+			<!-- 搜尋 -->
+			<div class="search">
+				<div style="display: flex;align-items: center;">
+					<input style="width: 80%;line-height: 25px;">
+					<div class="clear"></div>
+				</div>
+			</div>
+
+			<div class="window">
+				<div class="images" id="slides">
+					<img src="./img/img_001.jpg">
+					<img src="./img/img_002.png">
+					<img src="./img/img_003.png">
+					<img src="./img/img_004.jpg">
+					<img src="./img/img_005.jpg">
+					<img src="./img/img_006.jpg">
+					<img src="./img/img_007.jpg">
+					<img src="./img/img_008.jpg">
+					<img src="./img/img_009.jpg">
+					<img src="./img/img_010.jpg">
+				</div>
+			</div>
+			<div style="text-align: center;">
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+			</div>
+
+
+			<!-- 倒數 -->
+			<div class="count-down"></div>
+
+			<!-- 分類 -->
+			<div style="display: flex">
+				<div class="product-catogory">
+					<div>分類1</div>
+					<div>分類2</div>
+					<div>分類3</div>
+					<div>分類4</div>
+				</div>
+				<div class="products">
+				</div>
+			</div>
+		</div>
+
+		<!-- 回頂部 -->
+		<div class="go-top-box">
+			<div id="goTop">goTop</div>
+		</div>
+	</div>
+
+	<!-- 彈窗 -->
+	<div id="product-detail-modal"></div>
+
+	<!-- 遮罩 -->
+	<div id="mask"></div>
+</body>
+
+</html>
